@@ -24,12 +24,19 @@ class Api {
         
         $this->dbConnect();
         
-        //$this->testUrlHandling();
+        $this->testUrlHandling();
         //$this->createTest();
         //$this->testDB();
         
         $this->request = array();
-        foreach(explode('/', $_SERVER['REQUEST_URI']) as $element)
+        $request_uri = $_SERVER['REQUEST_URI'];
+        //echo $request_uri.' ';
+        $length = strlen($this->config['BASE_URL']);
+        //echo $length.' ';
+        //$request_uri = ltrim($request_uri, $this->config['BASE_URL']);
+		$request_uri = substr($request_uri, $length-1);
+		//echo $request_uri.' ';
+        foreach(explode('/', $request_uri) as $element)
         {
 			if($element != '')
 			{
@@ -37,49 +44,56 @@ class Api {
 			}
 		}
         
+        //print_r($this->request);
+        
         $modelList = $this->readAvaliableModels();
         
-        if(!in_array($this->request[1].'.php',$modelList))
+        if(!in_array($this->request[0].'.php',$modelList))
         {
-			header("HTTP/1.1 404 Not Found");
-			exit();
-		}
-		
-		$modelObject = $this->instantiateAvaliableModel($this->request[1].'.php');
-		
-		if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-			if ($this->request[2]!='' and !array_key_exists(3,$this->request))
-			{
-				$data = $modelObject->update($this->request[2]);
-				//$data = array('try the GET path and boring Things');
-			}
-			elseif ($this->request[2]!='' and $this->request[3]!='')
-			{
-				$data = $modelObject->postSpecial();    
-				//$data = array('try the GET path and Special Things');
-			}
-			else
-			{
-				$data = $modelObject->create();
-				//$data = array('try the GET path');
-			}
+			$data = array('You asked for an api-object, I do not know. This should be a 404!');
+			//header("HTTP/1.1 404 Not Found");
+			//exit();
 		}
 		else
 		{
-			if ($this->request[2]!='' and !array_key_exists(3,$this->request))
-			{
-				$data = $modelObject->readSingle($this->request[2]);
-				//$data = array('try the GET path and boring Things');
-			}
-			elseif ($this->request[2]!='' and $this->request[3]!='')
-			{
-				$data = $modelObject->getSpecial();    
-				//$data = array('try the GET path and Special Things');
+			$modelObject = $this->instantiateAvaliableModel($this->request[0].'.php');
+		
+			if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+				// POST WORKFLOW
+				if ($this->request[0]!='' and !array_key_exists(1,$this->request))
+				{
+					$data = $modelObject->update($this->request[0]);
+					//$data = array('try the GET path and boring Things');
+				}
+				elseif ($this->request[0]!='' and $this->request[1]!='')
+				{
+					$data = $modelObject->postSpecial();    
+					//$data = array('try the GET path and Special Things');
+				}
+				else
+				{
+					$data = $modelObject->create();
+					//$data = array('try the GET path');
+				}
 			}
 			else
 			{
-				$data = $modelObject->readAll();
-				//$data = array('try the GET path');
+				//GET WORKFLOW
+				if ($this->request[0]!='' and !array_key_exists(1,$this->request))
+				{
+					$data = $modelObject->readSingle($this->request[1]);
+					//$data = array('try the GET path and boring Things');
+				}
+				elseif ($this->request[0]!='' and $this->request[1]!='')
+				{
+					$data = $modelObject->getSpecial();    
+					//$data = array('try the GET path and Special Things');
+				}
+				else
+				{
+					$data = $modelObject->readAll();
+					//$data = array('try the GET path');
+				}
 			}
 		}
 		if ($this->debug){
@@ -193,6 +207,8 @@ class Api {
 	
 	
 }
+
+//echo "Hello";
 
 $api = new Api();
 echo $api->getJson();
