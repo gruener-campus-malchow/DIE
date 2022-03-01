@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titel</title>
+  </head>
+  <body>
+Hello.
+
+<script>
+
+var xhr = new XMLHttpRequest();
+xhr.open("POST", "../item/", true);
+xhr.setRequestHeader('Content-Type', 'application/json');
+xhr.send(JSON.stringify({
+    title: 'testtitel',
+    description: 'this is a helpful description'
+}));
+xhr.onload = function() {
+  console.log(this.responseText);
+  var data = JSON.parse(this.responseText);
+  console.log(data);
+}
+
+</script></body></html>
