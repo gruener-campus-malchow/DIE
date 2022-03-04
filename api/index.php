@@ -29,6 +29,8 @@ function config_defined()
 
 
 
+require_once 'lib/Model.php';
+require_once 'lib/API.php';
 
 
 // request url starting after the BASE_PATH, starting with a / character
