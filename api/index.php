@@ -91,8 +91,47 @@ require_once 'lib/API.php';
 
 // this function checks whether a given url matches a scheme
 // most importantly, this function implements dynamic schemes
+// returns an array containing a key value pair for each {tag}
+//in the scheme on match or false on failure
 function check_scheme($url, $scheme)
 {
-	// TODO: implement dynamic schemes
-	return $url == $scheme;
+	// the array containing all tags as key-value pairs
+	$tags = [];
+	// encode braces in url to avoid infinite loops
+	$url = str_replace('{', '%7B', $url);
+	$url = str_replace('}', '%7D', $url);
+	// keep looping until no tags are left
+	while (true)
+	{
+		// get index of the first { character in scheme to find the first tag
+		$start_index = strpos($scheme, '{');
+		// if no tags are left break out of the loop
+		if ($start_index === false) break;
+
+		// find first occurence of } in scheme
+		$end_index = strpos($scheme, '}');
+		// get the key between the start and the end index
+		$key = substr($scheme, $start_index + 1, $end_index - $start_index - 1);
+
+		// if url ends before tag return false
+		if ($start_index > strlen($url)) return false;
+		// find the corresponding value in the given url, which is indicated by
+		// the character following the tag
+		$value_end = strpos($url, $scheme[$end_index + 1], $start_index);
+		// get the value from the url corresponding to the key from the scheme
+		$value = substr($url, $start_index, $value_end - $start_index);
+
+		// add to array
+		$tags[$key] = $value;
+
+		// replace tag in scheme with value
+		$scheme = substr($scheme, 0, $start_index) . $value . substr($scheme, $end_index + 1);
+	}
+
+	// if url and scheme don't match, return false
+	// since all tags are replaced with values from the url, these should be identical
+	if ($url != $scheme) return false;
+
+	// return tags
+	return $tags;
 }
