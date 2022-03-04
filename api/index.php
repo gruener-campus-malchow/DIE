@@ -33,48 +33,54 @@ require_once 'lib/Model.php';
 require_once 'lib/API.php';
 
 
-// request url starting after the BASE_PATH, starting with a / character
-// /api/entry/ -> /entry/ if BASE_PATH is /api/
-$local_path = substr($_SERVER['REQUEST_URI'], strlen(BASE_PATH) - 1);
+(function () {
+	// request url starting after the BASE_PATH, starting with a / character
+	// /api/entry/ -> /entry/ if BASE_PATH is /api/
+	$local_path = substr($_SERVER['REQUEST_URI'], strlen(BASE_PATH) - 1);
 
-$dir = 'models';
+	$dir = 'models';
 
-// iterate over all files in dir
-foreach (scandir($dir) as $file)
-{
-	// path to file relative to index.php
-	$path = "$dir/$file";
-	// split file name into parts, see php manual entry for pathinfo()
-	$parts = pathinfo($path);
-	// filter out all directories and non-php files
-	if (is_dir($path) || $parts['extension'] !== 'php') continue;
-	// the class contained in the file should have the same name as the file
-	$classname = $parts['filename'];
-
-	// include the file
-	require_once $path;
-
-	// check if class with same name as the file exists
-	if (!class_exists($classname))
+	// iterate over all files in dir
+	foreach (scandir($dir) as $file)
 	{
-		// if we are in a dev environment, alert the user
-		if (ENV === 'DEV') echo "ERROR: Class $classname not found (in $path)\n";
-		// skip this file
-		continue;
+		// path to file relative to index.php
+		$path = "$dir/$file";
+		// split file name into parts, see php manual entry for pathinfo()
+		$parts = pathinfo($path);
+		// filter out all directories and non-php files
+		if (is_dir($path) || $parts['extension'] !== 'php') continue;
+		// the class contained in the file should have the same name as the file
+		$classname = $parts['filename'];
+
+		// include the file
+		require_once $path;
+
+		// check if class with same name as the file exists
+		if (!class_exists($classname))
+		{
+			// if we are in a dev environment, alert the user
+			if (ENV === 'DEV') echo "ERROR: Class $classname not found (in $path)\n";
+			// skip this file
+			continue;
+		}
+
+		// test if class is set to handle the current url
+		if (check_scheme($local_path, $classname::SCHEME))
+		{
+			// create instance
+			$instance = new $classname();
+			// call instance, this method should return true on success, false if it
+			// found it is not responsible for handling this request. this can be
+			// used if there are multiple possible url schemes that are handled by
+			// different classes, i.e. /posts/{post-id}/ and /posts/all/
+			if ($instance->call()) return;
+		}
 	}
 
-	// test if class is set to handle the current url
-	if (check_scheme($local_path, $classname::SCHEME))
-	{
-		// create instance
-		$instance = new $classname();
-		// call instance, this method should return true on success, false if it
-		// found it is not responsible for handling this request. this can be
-		// used if there are multiple possible url schemes that are handled by
-		// different classes, i.e. /posts/{post-id}/ and /posts/all/
-		if ($instance->call()) break;
-	}
-}
+	http_response_code(404);
+	header('Content-Type: text/plain');
+	die('404 Not Found');
+})();
 
 
 // this function checks whether a given url matches a scheme
