@@ -4,6 +4,11 @@
 #define('ENV', 'DEV');
 define('ENV', 'PROD');
 
+# add your api base path, starting and ending with a / character
+# use `/` if you want the api to operate on the root directory
+# make sure to insert the same value into the .htaccess file
+define('BASE_PATH', '/api/');
+
 # add your database config here
 define('DB_NAME', 'my_database');
 define('DB_USER', 'my_user');
