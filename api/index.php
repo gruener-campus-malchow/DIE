@@ -40,7 +40,7 @@ require_once 'lib/API.php';
 
 	// remove query string (url get parameters) if it exists
 	// find index of the first ? character
-	$query_index = strrpos($local_path, '?');
+	$query_index = strpos($local_path, '?');
 	// if it was found, remove all characters starting at that index
 	if ($query_index !== false) $local_path = substr($local_path, 0, $query_index);
 
