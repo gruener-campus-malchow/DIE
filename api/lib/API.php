@@ -2,9 +2,11 @@
 
 class API {
 
+	private $db;
+
 	public function __construct()
 	{
-
+		$this->db = new DB(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 	}
 
 	public function autoload($dir)
