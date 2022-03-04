@@ -38,6 +38,12 @@ require_once 'lib/API.php';
 	// /api/entry/ -> /entry/ if BASE_PATH is /api/
 	$local_path = substr($_SERVER['REQUEST_URI'], strlen(BASE_PATH) - 1);
 
+	// remove query string (url get parameters) if it exists
+	// find index of the first ? character
+	$query_index = strrpos($local_path, '?');
+	// if it was found, remove all characters starting at that index
+	if ($query_index !== false) $local_path = substr($local_path, 0, $query_index);
+
 	$dir = 'models';
 
 	// iterate over all files in dir
