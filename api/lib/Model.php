@@ -3,7 +3,7 @@
 abstract class Model
 {
 
-	abstract public function call();
+	abstract public function call($tags);
 
 	protected function return($data)
 	{
