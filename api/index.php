@@ -1,217 +1,84 @@
 <?php
 
-require_once('./models/model.php');
+require_once 'config/config.php';
 
-class Api {
-	private $db;
-	private $json;
-	private $config;
-	private $debug;
-	private $debugMessages;
-	private $request;
-	
-    public function __construct(){
-		
-		require_once('./config/config.php');
-		$this->config = $config;
-				
-		$this->debug = $this->config['debug'];
-		
-		if($this->debug){
-			$this->debugMessages = array();
-		}
-        header('Content-Type: application/json');
-        
-        $this->dbConnect();
-        
-        $this->testUrlHandling();
-        //$this->createTest();
-        //$this->testDB();
-        
-        $this->request = array();
-        $request_uri = $_SERVER['REQUEST_URI'];
-        //echo $request_uri.' ';
-        $length = strlen($this->config['BASE_URL']);
-        //echo $length.' ';
-        //$request_uri = ltrim($request_uri, $this->config['BASE_URL']);
-		$request_uri = substr($request_uri, $length-1);
-		//echo $request_uri.' ';
-        foreach(explode('/', $request_uri) as $element)
-        {
-			if($element != '')
-			{
-				array_push($this->request, $element);
-			}
-		}
-        
-        //print_r($this->request);
-        
-        $modelList = $this->readAvaliableModels();
-        
-        if(!in_array($this->request[0].'.php',$modelList))
-        {
-			$data = array('You asked for an api-object, I do not know. This should be a 404!');
-			//header("HTTP/1.1 404 Not Found");
-			//exit();
-		}
-		else
+if (!defined('ENV')) define('ENV', 'PROD');
+if (ENV == 'DEV') error_reporting(E_ALL);
+else error_reporting(0);
+
+if (!config_defined('BASE_PATH')) die('base path configuration missing');
+if (substr(BASE_PATH, 0, 1) != '/' || substr(BASE_PATH, -1) != '/') die('base path misconfigured: make sure first and last character are a /');
+
+if (!config_defined('DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST')) die('database configuration missing');
+
+
+function config_defined()
+{
+	$keys = func_get_args();
+	foreach ($keys as $key)
+	{
+		if (!defined($key))
 		{
-			$modelObject = $this->instantiateAvaliableModel($this->request[0].'.php');
-		
-			if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-				// POST WORKFLOW
-				if ($this->request[0]!='' and !array_key_exists(1,$this->request))
-				{
-					$data = $modelObject->update($this->request[0]);
-					//$data = array('try the GET path and boring Things');
-				}
-				elseif ($this->request[0]!='' and $this->request[1]!='')
-				{
-					$data = $modelObject->postSpecial();    
-					//$data = array('try the GET path and Special Things');
-				}
-				else
-				{
-					$data = $modelObject->create();
-					//$data = array('try the GET path');
-				}
-			}
-			else
-			{
-				//GET WORKFLOW
-				if ($this->request[0]!='' and !array_key_exists(1,$this->request))
-				{
-					$data = $modelObject->readSingle($this->request[1]);
-					//$data = array('try the GET path and boring Things');
-				}
-				elseif ($this->request[0]!='' and $this->request[1]!='')
-				{
-					$data = $modelObject->getSpecial();    
-					//$data = array('try the GET path and Special Things');
-				}
-				else
-				{
-					$data = $modelObject->readAll();
-					//$data = array('try the GET path');
-				}
-			}
-		}
-		if ($this->debug){
-			$data = array($this->request, $data);
-		}
-        
-        $this->json = json_encode($data);
-        
-        if($this->debug){
-			$this->json = json_encode($this->debugMessages);
+			return false;
 		}
 	}
-    private function dbConnect(){
-		
-		$this->db = new PDO('mysql:host='.$this->config['DB_HOST'].
-								';dbname='.$this->config['DB_NAME'],
-								$this->config['DB_USER'], 
-								$this->config['DB_PASSWORD']);
-        if ($this->debug){
-			$this->debugMessages = array_merge(array(
-				'errorcode' => $this->db->errorCode(),
-				'errorinfo' => $this->db->errorInfo()
-			), $this->debugMessages);
-		}
-       // $this->json = json_encode($data);
-    }
-    private function executeSELECT($query){
-		$statement = $this->db->prepare($query);
-        $statement->execute();
-        $data = $statement->fetchAll(PDO::FETCH_ASSOC);
-        
-        if ($this->debug){
-			$this->debugMessages = array_merge(array(
-				'errorcode' => $this->db->errorCode(),
-				'errorinfo' => $this->db->errorInfo()
-			), $this->debugMessages);
-		}
-        
-        return $data;
-	}
-	public function getJson()
-	{
-		return $this->json;
-	}
-	private function createTest(){
-		$collection = array();
-		
-		$testmodel = new model('item',$this->db, $this->debug);
-		$data = $testmodel->readAll();
-		array_push($collection, $data);
-		if ($this->debug){
-			array_push($this->debugMessages, $testmodel->debugMessages);
-		}
-				
-		$testmodel = new model('pictures',$this->db, $this->debug);
-		$data = $testmodel->readAll();
-		array_push($collection, $data);
-		if ($this->debug){
-			array_push($this->debugMessages, $testmodel->debugMessages);
-		}
 
-		$testmodel = new model('item',$this->db, $this->debug);
-		$data = $testmodel->readSingle('1');
-		array_push($collection, $data);
-		if ($this->debug){
-			array_push($this->debugMessages, $testmodel->debugMessages);
-		}
-
-		$this->json = json_encode($collection);
-	}
-	private function testDB(){
-		
-		$data = $this->executeSELECT('SELECT * FROM item');
-		$this->json = json_encode($data);
-	}
-	
-	private function testUrlHandling(){
-		$data = array();
-		array_push($data, $_SERVER['REQUEST_URI']);
-		$this->json = json_encode($data);
-	}
-	
-	private function readAvaliableModels()
-	{
-	    // öffnen des Verzeichnisses
-		if ( $handle = opendir('./models/') )
-		{
-			// einlesen der Verzeichnisses
-			$data = array();
-			//array_push($data, 'put some files into list');
-			while (($file = readdir($handle)) !== false)
-			{
-				if (array_pop(explode('.',$file))== 'php')
-				{
-					array_push($data, $file);
-				}
-				
-			}
-			closedir($handle);
-		}else{
-			array_push($this->debugMessages, 'not a working directory');
-		}
-		return $data;
-	}
-	private function instantiateAvaliableModel($modelFile)
-	{
-		require_once('./models/'.$modelFile);
-		$modelname = explode('.',$modelFile)[0];
-		return new $modelname($modelname,$this->db,$this->debug, $this->request, $this->config);
-	}
-	
-	
+	return true;
 }
 
-//echo "Hello";
-
-$api = new Api();
-echo $api->getJson();
 
 
-?>
+
+
+
+// request url starting after the BASE_PATH, starting with a / character
+// /api/entry/ -> /entry/ if BASE_PATH is /api/
+$local_path = substr($_SERVER['REQUEST_URI'], strlen(BASE_PATH) - 1);
+
+$dir = 'models';
+
+// iterate over all files in dir
+foreach (scandir($dir) as $file)
+{
+	// path to file relative to index.php
+	$path = "$dir/$file";
+	// split file name into parts, see php manual entry for pathinfo()
+	$parts = pathinfo($path);
+	// filter out all directories and non-php files
+	if (is_dir($path) || $parts['extension'] !== 'php') continue;
+	// the class contained in the file should have the same name as the file
+	$classname = $parts['filename'];
+
+	// include the file
+	require_once $path;
+
+	// check if class with same name as the file exists
+	if (!class_exists($classname))
+	{
+		// if we are in a dev environment, alert the user
+		if (ENV === 'DEV') echo "ERROR: Class $classname not found (in $path)\n";
+		// skip this file
+		continue;
+	}
+
+	// test if class is set to handle the current url
+	if (check_scheme($local_path, $classname::SCHEME))
+	{
+		// create instance
+		$instance = new $classname();
+		// call instance, this method should return true on success, false if it
+		// found it is not responsible for handling this request. this can be
+		// used if there are multiple possible url schemes that are handled by
+		// different classes, i.e. /posts/{post-id}/ and /posts/all/
+		if ($instance->call()) break;
+	}
+}
+
+
+// this function checks whether a given url matches a scheme
+// most importantly, this function implements dynamic schemes
+function check_scheme($url, $scheme)
+{
+	// TODO: implement dynamic schemes
+	return $url == $scheme;
+}
