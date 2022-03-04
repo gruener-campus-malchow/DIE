@@ -9,11 +9,12 @@ define('ENV', 'PROD');
 # make sure to insert the same value into the .htaccess file
 define('BASE_PATH', '/api/');
 
-# add your database config here
-define('DB_NAME', 'my_database');
-define('DB_USER', 'my_user');
-define('DB_PASSWORD', 'my_password');
-define('DB_HOST', 'localhost');
+# if you need to connect to a database, uncomment the following lines and
+# add your database config
+#define('DB_NAME', 'my_database');
+#define('DB_USER', 'my_user');
+#define('DB_PASSWORD', 'my_password');
+#define('DB_HOST', 'localhost');
 
 # if you want e-mail, uncomment these lines and add your e-mail config
 #define('MAIL_ADDRESS', 'root@localhost');
