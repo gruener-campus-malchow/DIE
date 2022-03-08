@@ -70,7 +70,7 @@ class API {
 	// this function checks whether a given url matches a scheme
 	// most importantly, this function implements dynamic schemes
 	// returns an array containing a key value pair for each {tag}
-	//in the scheme on match or false on failure
+	// in the scheme on match or false on failure
 	private function check_scheme($url, $scheme)
 	{
 		// the array containing all tags as key-value pairs
