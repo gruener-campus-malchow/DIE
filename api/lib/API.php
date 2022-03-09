@@ -105,6 +105,9 @@ class API {
 			// which is probably not the expected behavoir
 			if (strpos($value, '/') !== false) return false;
 
+			// if $value is a numberic string, convert it to a number
+			if (is_numeric($value)) $value = $value + 0;
+
 			// add to array
 			$tags[$key] = $value;
 
