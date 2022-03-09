@@ -99,6 +99,12 @@ class API {
 			// get the value from the url corresponding to the key from the scheme
 			$value = substr($url, $start_index, $value_end - $start_index);
 
+			// we don't want slashes in tag values since this can potentially break things
+			// /posts/20/22/hello-world.html would match /posts/{year}/{post_name}.html
+			// and $tags would be ['year' => '20', 'post_name' => '22/hello-world']
+			// which is probably not the expected behavoir
+			if (strpos($value, '/') !== false) return false;
+
 			// add to array
 			$tags[$key] = $value;
 
