@@ -97,9 +97,18 @@ class Controller
 
 			// if url ends before tag return false
 			if ($start_index > strlen($url)) return false;
-			// find the corresponding value in the given url, which is indicated by
-			// the character following the tag
-			$value_end = strpos($url, $scheme[$end_index + 1], $start_index);
+			// find the corresponding value in the given url
+			// if there are other characters following the closing tag brace...
+			if ($end_index < strlen($scheme) - 1)
+			{
+				// the end position of the value is indicated by the character
+				// following the tag, usually a slash
+				$value_end = strpos($url, $scheme[$end_index + 1], $start_index);
+			} else {
+				// if the scheme ends with the tag (e.g. '/{filename}.{extension}'),
+				// the value for the last tag simply ends at the end of the string.
+				$value_end = strlen($url);
+			}
 			// get the value from the url corresponding to the key from the scheme
 			$value = substr($url, $start_index, $value_end - $start_index);
 
