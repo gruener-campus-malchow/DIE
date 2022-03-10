@@ -1,10 +1,12 @@
 <?php
 
-class MyModel extends Model {
+class MyModel extends Model
+{
 
 	const SCHEME = '/';
 
-	public function call($tags) {
+	public function call($tags)
+	{
 		$this->return([
 			'status' => 'success',
 			'content' => 'hello world'

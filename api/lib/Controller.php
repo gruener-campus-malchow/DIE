@@ -1,6 +1,7 @@
 <?php
 
-class Controller {
+class Controller
+{
 
 	private $db;
 
