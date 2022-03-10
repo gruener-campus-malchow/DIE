@@ -109,14 +109,14 @@ class Controller
 			// which is probably not the expected behavoir
 			if (strpos($value, '/') !== false) return false;
 
+			// replace tag in scheme with value
+			$scheme = substr($scheme, 0, $start_index) . $value . substr($scheme, $end_index + 1);
+
 			// if $value is a numberic string, convert it to a number
 			if (is_numeric($value)) $value = $value + 0;
 
 			// add to array
 			$tags[$key] = $value;
-
-			// replace tag in scheme with value
-			$scheme = substr($scheme, 0, $start_index) . $value . substr($scheme, $end_index + 1);
 		}
 
 		// if url and scheme don't match, return false
