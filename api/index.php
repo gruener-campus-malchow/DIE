@@ -34,5 +34,5 @@ require_once 'lib/API.php';
 require_once 'lib/Model.php';
 
 
-$api = new API();
-$api->autoload('models');
+$controller = new Controller();
+$controller->autoload('models');
