@@ -76,6 +76,9 @@ class Controller
 	{
 		// the array containing all tags as key-value pairs
 		$tags = [];
+		// if the scheme ends with /, we want to make sure we match urls without a
+		// trailing / as well (check_scheme('/foo', '/foo/') should return true)
+		if (substr($scheme, -1) == '/' && substr($url, -1) != '/') $url .= '/';
 		// encode braces in url to avoid infinite loops
 		$url = str_replace('{', '%7B', $url);
 		$url = str_replace('}', '%7D', $url);
