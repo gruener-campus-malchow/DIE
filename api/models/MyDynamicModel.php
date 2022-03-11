@@ -7,6 +7,7 @@ class MyDynamicModel extends Model
 
 	public function call($tags)
 	{
+		$tags['get_params'] = $_GET;
 		$this->return($tags);
 		return true;
 	}
