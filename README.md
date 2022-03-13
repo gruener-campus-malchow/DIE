@@ -3,6 +3,31 @@ DIE Is E3RA (Extended Education Engine REST (REpresentational State Transfer) AP
 
 Dabei ist weniger das englische Wort für Sterben nahe gelegt, das der deutsche Artikel. Es ist halt DIE Api mit der wir hoffentlich schneller Projekte am GCM entwickeln können.
 
+
+## API Schemes (Entwurf)
+
+```
+      GET /items/		-> gibt liste mit allen items zurück
+      GET /items/?color=red	-> gibt liste mit allen roten items zurück
+      GET /items/42		-> gibt item #42 zurück
+      GET /items/42/color	-> gibt farbe des items #42 zurück
+*    HEAD *			-> wie GET, gibt aber keinen body zurück
+     POST /items/		-> erstellt neues item aus dem request body, gibt id zurück
+     POST /items/42		-> ändert existierendes item #42 mit daten aus dem request body¹
+*   PATCH /items/42		-> ändert existierendes item #42 mit daten aus dem request body¹
+      PUT /items/42		-> fügt item aus daten aus dem request body mit id 42 ein (ersetzt ggf. das alte)
+*     PUT /items/		-> ersetzt alle items mit liste aus dem request body
+   DELETE /items/42		-> löscht item #42
+*  DELETE /items/		-> löscht alle items
+* OPTIONS *			-> gibt http 402 mit allow header zurück
+*       * /items		-> 400 Bad Request
+*       * /items/42/		-> 400 Bad Request
+```
+
+\* optional \
+¹ hier sollte man sich für eine Variante entscheiden
+
+
 ## URL Handling
 
 ### Examples
