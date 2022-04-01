@@ -3,28 +3,102 @@
 abstract class Model
 {
 
-	abstract public function call($tags);
+	protected $db;
+	protected $name, $id, $searchable, $insertable;
 
-	protected function return($data)
+	public function __construct($db)
 	{
-		$this->response(200, $data);
+		$this->db = $db;
 	}
 
-	protected function response($code, $data)
+
+
+	public function getAll($filter)
+	{
+		$query = "SELECT * FROM `$this->name` WHERE 1";
+		$params = [];
+		foreach ($filter as $attr => $value)
+		{
+			if (!in_array($attr, $this->searchable)) continue;
+
+			$parts = explode(',', $value);
+			$query .= " AND (0";
+			foreach ($parts as $part)
+			{
+				$query .= " OR $attr = ?";
+				$params[] = $part;
+			}
+			$query .= ")";
+		}
+		$this->api_response($this->db->query($query, $params));
+	}
+
+	public function getSingle($identifier)
+	{
+		$this->api_response($this->db->query("SELECT * FROM $this->name WHERE $this->id = ?", [$identifier])[0]);
+	}
+
+	public function getAttribute($identifier, $attribute)
+	{
+		if (!in_array($attribute, $this->searchable)) return false;
+		$this->api_response($this->db->query("SELECT $attribute FROM $this->name WHERE $this->id = ?", [$identifier])[0][$attribute]);
+	}
+
+	public function createSingle($data)
+	{
+		$columns = $values = [];
+		foreach ($data as $attr => $value)
+		{
+			if (!in_array($attr, $this->insertable)) continue;
+			$columns[] = $attr;
+			$values[] = $value;
+		}
+		$columns = implode(', ', $columns);
+		$values_template = implode(', ', array_fill(0, count($values), '?'));
+		$this->api_response($this->db->query("INSERT INTO $this->name ($columns) VALUES ($values_template)", $values));
+	}
+
+	public function updateSingle($identifier, $data)
+	{
+		$updates = $values = [];
+		foreach ($data as $attr => $value)
+		{
+			if (!in_array($attr, $this->insertable)) continue;
+			$updates[] = "$attr = ?";
+			$values[] = $value;
+		}
+		$updates = implode(', ', $updates);
+		$values[] = $identifier;
+		$this->api_response($this->db->query("UPDATE $this->name SET $updates WHERE $this->id = ?", $values));
+	}
+
+	public function replaceSingle($identifier, $data)
+	{
+		$columns = $values = [];
+		foreach ($data as $attr => $value)
+		{
+			if (!in_array($attr, $this->insertable)) continue;
+			$columns[] = $attr;
+			$values[] = $value;
+		}
+		$columns = implode(', ', $columns);
+		$values_template = implode(', ', array_fill(0, count($values), '?'));
+		$values[] = $identifier;
+		$this->api_response($this->db->query("REPLACE INTO $this->name ($columns) VALUES ($values_template)", $values));
+	}
+
+	public function deleteSingle($identifier)
+	{
+		$this->api_response($this->db->query("DELETE FROM $this->name WHERE $this->id = ?", [$identifier]));
+	}
+
+
+
+	protected function api_response($data, $code = 200)
 	{
 		http_response_code($code);
-		if (is_array($data))
-		{
-			header('Content-Type: application/json');
-			echo json_encode($data);
-		}
-		else
-		{
-			header('Content-Type: text/plain');
-			echo $data;
-		}
-
-
+		header('Content-Type: application/json');
+		echo json_encode($data);
 	}
 
 }

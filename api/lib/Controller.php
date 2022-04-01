@@ -10,6 +10,32 @@ class Controller
 		$this->db = new DB(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 	}
 
+	// converts CamelCase to snake_case
+	private function cc2sc($cc, $d = '_')
+	{
+		$sc = '';
+		foreach (str_split($cc) as $i => $l)
+		{
+			if (ctype_upper($l) && $i > 0) $sc .= $d;
+			$sc .= strtolower($l);
+		}
+		return $sc;
+	}
+
+	// converts snake_case to CamelCase
+	private function sc2cc($sc, $d = '_')
+	{
+		$cc = '';
+		foreach (str_split($sc) as $i => $l)
+		{
+			if ($l == $d) continue;
+			if ($i == 0 || $sc[$i - 1] == $d) $l = strtoupper($l);
+			$cc .= $l;
+		}
+		return $cc;
+	}
+
+
 	public function autoload($dir)
 	{
 		// request url starting after the BASE_PATH, starting with a / character
@@ -22,118 +48,77 @@ class Controller
 		// if it was found, remove all characters starting at that index
 		if ($query_index !== false) $local_path = substr($local_path, 0, $query_index);
 
-		// iterate over all files in dir
-		foreach (scandir($dir) as $file)
-		{
-			// path to file relative to index.php
-			$path = "$dir/$file";
-			// split file name into parts, see php manual entry for pathinfo()
-			$parts = pathinfo($path);
-			// filter out all directories and non-php files
-			if (is_dir($path) || $parts['extension'] !== 'php') continue;
-			// the class contained in the file should have the same name as the file
-			$classname = $parts['filename'];
 
+		// array containing all file (and directory) names from the request url
+		$url_parts = array_values(array_filter(explode('/', $local_path)));
+		// extract resource, identifier and attribute from url; resource defaults to `root` (/)
+		$resource = isset($url_parts[0]) ? $url_parts[0] : 'root';
+		$identifier = isset($url_parts[1]) ? $url_parts[1] : null;
+		$attribute = isset($url_parts[2]) ? $url_parts[2] : null;
+		if (isset($url_parts[3])) $this->error(400, 'Too Many Parameters');
+
+		// enforce REST-style URLs
+		if (!isset($identifier) && substr($local_path, -1) != '/') $this->error(400, 'Malformed URL: Accessing List As Object');
+		if (isset($identifier) && substr($local_path, -1) == '/') $this->error(400, 'Malformed URL: Accessing Object As List');
+
+		// the class name is derived from the first subdirectory
+		$classname = $this->sc2cc($resource, '-');
+		// path to file relative to index.php, the class contained in the file
+		// should have the same name as the file
+		$path = "$dir/$classname.php";
+
+		if (file_exists($path))
+		{
 			// include the file
 			require_once $path;
 
 			// check if class with same name as the file exists
-			if (!class_exists($classname))
+			if (class_exists($classname))
+			{
+				// create instance
+				$instance = new $classname($this->db);
+				//return $instance->call();
+
+				switch ($_SERVER['REQUEST_METHOD'])
+				{
+					case 'GET':
+						if (!isset($identifier)) return $instance->getAll($_GET);
+						if (!isset($attribute)) return $instance->getSingle($identifier);
+						return $instance->getAttribute($identifier, $attribute);
+					case 'POST':
+						$body = json_decode(file_get_contents('php://input'), true);
+						if (!isset($identifier)) return $instance->createSingle($body);
+						if (!isset($attribute)) return $instance->updateSingle($identifier, $body);
+						return $this->error(400, 'Bad Request');
+					case 'PUT':
+						$body = json_decode(file_get_contents('php://input'), true);
+						if (isset($identifier) && !isset($attribute)) return $instance->replaceSingle($identifier, $body);
+						return $this->error(400, 'Bad Request');
+					case 'DELETE':
+						if (isset($identifier) && !isset($attribute)) return $instance->deleteSingle($identifier);
+						return $this->error(400, 'Bad Request');
+					default:
+						return $this->error(405, 'Request Method Is Not Implemented By The Target Resource');
+				}
+
+			}
+			else
 			{
 				// if we are in a dev environment, alert the user
 				if (ENV === 'DEV') echo "ERROR: Class $classname not found (in $path)\n";
-				// skip this file
-				continue;
-			}
-
-			// gat tags and values as array
-			$tags = $this->check_scheme($local_path, $classname::SCHEME);
-			// test if class is set to handle the current url
-			if ($tags !== false)
-			{
-				// create instance
-				$instance = new $classname();
-				// call instance, this method should return true on success, false if it
-				// found it is not responsible for handling this request. this can be
-				// used if there are multiple possible url schemes that are handled by
-				// different classes, i.e. /posts/{post_id}/ and /posts/all/
-				if ($instance->call($tags)) return;
 			}
 		}
 
 		// if no model was able to handle the request, return a 404 error
-		http_response_code(404);
-		header('Content-Type: text/plain');
-		die('404 Not Found');
+		$this->error(404, '404 Not Found');
 	}
 
-
-	// this function checks whether a given url matches a scheme
-	// most importantly, this function implements dynamic schemes
-	// returns an array containing a key value pair for each {tag}
-	// in the scheme on match or false on failure
-	private function check_scheme($url, $scheme)
+	// returns an http error
+	private function error($code, $message)
 	{
-		// the array containing all tags as key-value pairs
-		$tags = [];
-		// if the scheme ends with /, we want to make sure we match urls without a
-		// trailing / as well (check_scheme('/foo', '/foo/') should return true)
-		if (substr($scheme, -1) == '/' && substr($url, -1) != '/') $url .= '/';
-		// encode braces in url to avoid infinite loops
-		$url = str_replace('{', '%7B', $url);
-		$url = str_replace('}', '%7D', $url);
-		// keep looping until no tags are left
-		while (true)
-		{
-			// get index of the first { character in scheme to find the first tag
-			$start_index = strpos($scheme, '{');
-			// if no tags are left break out of the loop
-			if ($start_index === false) break;
-
-			// find first occurence of } in scheme
-			$end_index = strpos($scheme, '}');
-			// get the key between the start and the end index
-			$key = substr($scheme, $start_index + 1, $end_index - $start_index - 1);
-
-			// if url ends before tag return false
-			if ($start_index > strlen($url)) return false;
-			// find the corresponding value in the given url
-			// if there are other characters following the closing tag brace...
-			if ($end_index < strlen($scheme) - 1)
-			{
-				// the end position of the value is indicated by the character
-				// following the tag, usually a slash
-				$value_end = strpos($url, $scheme[$end_index + 1], $start_index);
-			} else {
-				// if the scheme ends with the tag (e.g. '/{filename}.{extension}'),
-				// the value for the last tag simply ends at the end of the string.
-				$value_end = strlen($url);
-			}
-			// get the value from the url corresponding to the key from the scheme
-			$value = substr($url, $start_index, $value_end - $start_index);
-
-			// we don't want slashes in tag values since this can potentially break things
-			// /posts/20/22/hello-world.html would match /posts/{year}/{post_name}.html
-			// and $tags would be ['year' => '20', 'post_name' => '22/hello-world']
-			// which is probably not the expected behavoir
-			if (strpos($value, '/') !== false) return false;
-
-			// replace tag in scheme with value
-			$scheme = substr($scheme, 0, $start_index) . $value . substr($scheme, $end_index + 1);
-
-			// if $value is a numberic string, convert it to a number
-			if (is_numeric($value)) $value = $value + 0;
-
-			// add to array
-			$tags[$key] = $value;
-		}
-
-		// if url and scheme don't match, return false
-		// since all tags are replaced with values from the url, these should be identical
-		if ($url != $scheme) return false;
-
-		// return tags
-		return $tags;
+		http_response_code($code);
+		header('Content-Type: text/plain');
+		die($message);
 	}
 
 }
