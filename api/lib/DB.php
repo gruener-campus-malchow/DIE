@@ -10,7 +10,7 @@ class DB
 	{
 		try
 		{
-			$this->connection = new PDO("mysql:host=" . $host . ";dbname=" . $database, $username, $password);
+			$this->connection = new PDO("mysql:host=$host;dbname=$database", $username, $password);
 		}
 		catch (PDOException $e)
 		{
@@ -27,11 +27,18 @@ class DB
 
 		foreach ($values as $key => $value)
 		{
-			$statement->bindValue(':' . $key, $value);
+			$statement->bindValue($key + 1, $value);
 		}
 
-		$statement->execute();
-		return $statement->fetchAll($fetchMode);
+		if ($statement->execute())
+		{
+			return $statement->fetchAll($fetchMode);
+		}
+		elseif (ENV == 'DEV')
+		{
+			return $statement->queryString;//$statement->errorInfo();
+		}
+		return false;
 	}
 
 }
