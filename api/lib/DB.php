@@ -41,4 +41,12 @@ class DB
 		return false;
 	}
 
+
+	public function getLastInsertId()
+	{
+		$id = $this->connection->lastInsertId();
+		if (is_numeric($id)) $id = $id + 0;
+		return $id;
+	}
+
 }

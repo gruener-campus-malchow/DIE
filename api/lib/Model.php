@@ -35,13 +35,18 @@ abstract class Model
 
 	public function getSingle($identifier)
 	{
-		$this->api_response($this->db->query("SELECT * FROM $this->name WHERE $this->id = ?", [$identifier])[0]);
+		$result = $this->db->query("SELECT * FROM $this->name WHERE $this->id = ?", [$identifier]);
+		if (!$result) $this->api_response('Item Does Not Exist', 404);
+		else $this->api_response($result[0]);
 	}
 
 	public function getAttribute($identifier, $attribute)
 	{
-		if (!in_array($attribute, $this->searchable)) return false;
-		$this->api_response($this->db->query("SELECT $attribute FROM $this->name WHERE $this->id = ?", [$identifier])[0][$attribute]);
+		if (!in_array($attribute, $this->searchable)) return $this->api_response('Invalid Attribute', 404);
+
+		$result = $this->db->query("SELECT $attribute FROM $this->name WHERE $this->id = ?", [$identifier]);
+		if (!$result) $this->api_response('Item Does Not Exist', 404);
+		else $this->api_response($result[0][$attribute]);
 	}
 
 	public function createSingle($data)
@@ -55,7 +60,8 @@ abstract class Model
 		}
 		$columns = implode(', ', $columns);
 		$values_template = implode(', ', array_fill(0, count($values), '?'));
-		$this->api_response($this->db->query("INSERT INTO $this->name ($columns) VALUES ($values_template)", $values));
+		$this->db->query("INSERT INTO $this->name ($columns) VALUES ($values_template)", $values);
+		$this->api_response($this->db->getLastInsertId());
 	}
 
 	public function updateSingle($identifier, $data)
