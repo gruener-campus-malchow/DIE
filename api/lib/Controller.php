@@ -85,7 +85,7 @@ class Controller
 						// GET /items/ [returns list with all items]
 						// this can be filtered using GET URL parameters,
 						// such as GET /items/?color=red [returns list with all red items]
-						if (!isset($identifier)) return $instance->getAll($_GET);
+						if (!isset($identifier)) return $instance->getAll($_SERVER['QUERY_STRING']);
 						// GET /items/42 [returns item #42]
 						if (!isset($attribute)) return $instance->getSingle($identifier);
 						// GET /items/42/color [returns the color of item #42]

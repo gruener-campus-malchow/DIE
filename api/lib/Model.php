@@ -15,10 +15,15 @@ abstract class Model
 
 	public function getAll($filter)
 	{
+		$filter = explode('&', $filter);
 		$query = "SELECT * FROM `$this->name` WHERE 1";
 		$params = [];
-		foreach ($filter as $attr => $value)
+		foreach ($filter as $pair)
 		{
+			if (substr_count($pair, '=') != 1) continue;
+			$eqpos = strpos($pair, '=');
+			$attr = substr($pair, 0, $eqpos);
+			$value = substr($pair, $eqpos + 1);
 			if (!in_array($attr, $this->searchable)) continue;
 
 			$parts = explode(',', $value);
