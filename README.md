@@ -8,13 +8,13 @@ Dabei ist weniger das englische Wort für Sterben nahe gelegt, das der deutsche 
 
 ```
       GET /items/		-> gibt liste mit allen items zurück
-      GET /items/?color=red	-> gibt liste mit allen roten items zurück
+      GET /items/?color=red	-> gibt liste mit allen roten items zurück¹
       GET /items/42		-> gibt item #42 zurück
       GET /items/42/color	-> gibt farbe des items #42 zurück
 *    HEAD *			-> wie GET, gibt aber keinen body zurück
      POST /items/		-> erstellt neues item aus dem request body, gibt id zurück
-     POST /items/42		-> ändert existierendes item #42 mit daten aus dem request body¹
-*   PATCH /items/42		-> ändert existierendes item #42 mit daten aus dem request body¹
+     POST /items/42		-> ändert existierendes item #42 mit daten aus dem request body²
+*   PATCH /items/42		-> ändert existierendes item #42 mit daten aus dem request body²
       PUT /items/42		-> fügt item aus daten aus dem request body mit id 42 ein (ersetzt ggf. das alte)
 *     PUT /items/		-> ersetzt alle items mit liste aus dem request body
    DELETE /items/42		-> löscht item #42
@@ -25,7 +25,20 @@ Dabei ist weniger das englische Wort für Sterben nahe gelegt, das der deutsche 
 ```
 
 \* optional \
-¹ hier sollte man sich für eine Variante entscheiden
+¹ siehe nächster Abschnitt für Details
+² hier sollte man sich für eine Variante entscheiden
+
+### GET Params
+
+| Schema | Funktion |
+| --- | --- |
+| ` `, `?` | keine; gesamte Liste ausgeben |
+| `?color=red` | nur Gegenstände, deren Attribut `color` gleich `red` ist |
+| `?color=red&type=car` | nur Gegenstände, deren Attribut `color` gleich `red` ist **und** deren `type` gleich `car` ist |
+| `?color=red,blue` | nur Gegenstände, deren Attribut `color` gleich `red` **oder** gleich `blue` ist |
+| `?color=red&color=blue` | nur Gegenstände, deren Attribut `color` gleich `red` **und** gleich `blue` ist (1:n, n:m) |
+| `?color=red&type=car&color=blue` | nur Gegenstände, deren Attribut `color` gleich `red` **und** gleich `blue` ist **und** deren `type` gleich `car` ist |
+| `?color` | nur Gegenstände, deren Attribut `color` nicht `NULL` ist |
 
 
 ## URL Handling
