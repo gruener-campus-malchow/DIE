@@ -25,7 +25,7 @@ Dabei ist weniger das englische Wort für Sterben nahe gelegt, das der deutsche 
 ```
 
 \* optional \
-¹ siehe nächster Abschnitt für Details
+¹ siehe nächster Abschnitt für Details \
 ² hier sollte man sich für eine Variante entscheiden
 
 ### GET Params
