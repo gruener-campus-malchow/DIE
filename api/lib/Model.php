@@ -20,11 +20,24 @@ abstract class Model
 		$params = [];
 		foreach ($filter as $pair)
 		{
-			if (substr_count($pair, '=') != 1) continue;
-			$eqpos = strpos($pair, '=');
-			$attr = substr($pair, 0, $eqpos);
-			$value = substr($pair, $eqpos + 1);
+			if (substr_count($pair, '=') > 1) continue;
+			if (substr_count($pair, '=') == 1)
+			{
+				$eqpos = strpos($pair, '=');
+				$attr = substr($pair, 0, $eqpos);
+				$value = substr($pair, $eqpos + 1);
+			}
+			else
+			{
+				$attr = $pair;
+				$value = null;
+			}
 			if (!in_array($attr, $this->searchable)) continue;
+			if ($value === null)
+			{
+				$query .= " AND $attr IS NOT NULL";
+				continue;
+			}
 
 			$parts = explode(',', $value);
 			$query .= " AND (0";
