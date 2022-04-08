@@ -2,8 +2,9 @@
 
 abstract class Model
 {
-
+	// reference to the DB instance, since we want to avoid static classes/methods
 	protected $db;
+	// boilerplate model config
 	protected $name, $id, $searchable, $insertable;
 
 	public function __construct($db)
@@ -12,7 +13,9 @@ abstract class Model
 	}
 
 
-
+	// this method handles api calls that target the model by class name
+	// it is called by Controller::autoload()
+	// $identifier and $attribute refer to the second and third subdirectory
 	public function call($identifier, $attribute)
 	{
 		switch ($_SERVER['REQUEST_METHOD'])
@@ -62,41 +65,71 @@ abstract class Model
 	}
 
 
+	// returns a list of all elements, can be filtered by attributes, via GET
+	// parameters using the structures defined in README.md
 	public function getAll($filter)
 	{
+		// filters are key-value pairs separated by `&` characters
 		$filter = explode('&', $filter);
+		// the SELECT query; the WHERE 1 exists to make it easier to append more
+		// conditions using AND
 		$query = "SELECT * FROM `$this->name` WHERE 1";
+		// array containing the values representing the values to be bound to
+		// the query; this exists to prevent sql injections
+		// (yes, I studied boolean algebra in university)
 		$params = [];
+		// $pair is a key-value pair in the form key=value
 		foreach ($filter as $pair)
 		{
+			// if there are more than one = sign, the filter is invalid, and we ignore it
 			if (substr_count($pair, '=') > 1) continue;
+			// if there is exactly one = sign, we are dealing with a normal key-value pair
 			if (substr_count($pair, '=') == 1)
 			{
+				// position (index) of the = in the string
 				$eqpos = strpos($pair, '=');
+				// attribute (everything before the = sign)
 				$attr = substr($pair, 0, $eqpos);
+				// value (everything after the = sign, can be an empty string)
 				$value = substr($pair, $eqpos + 1);
 			}
+			// if there are no = signs, we treat the filter as a NOT NULL
 			else
 			{
+				// in this case, the whole thing is the attribute
 				$attr = $pair;
+				// value is null, note that this value is not used in the actual query
 				$value = null;
 			}
+			// to prevent sql injections, we only allow filtering by existing attributes
 			if (!in_array($attr, $this->searchable)) continue;
+
+			// special case for the NULL check, since it requires special sql syntax
 			if ($value === null)
 			{
 				$query .= " AND $attr IS NOT NULL";
 				continue;
 			}
 
+			// if a value contains commas, that means it targets multiple options
 			$parts = explode(',', $value);
+			// this part of the query is a series of conditions joined with OR,
+			// joined to the query with an AND
+			// e.g. /items/?color=red,blue&type=car&name -> SELECT * FROM items WHERE 1 AND (0 OR color = 'red' OR color = 'blue') AND (0 OR type = 'car') AND name IS NOT NULL
+			// it's longer than neccessary, but it gets the job done and the implementation is cleaner
 			$query .= " AND (0";
+			// $part is a single value such as 'red', 'blue', ''
 			foreach ($parts as $part)
 			{
+				// add condition to query
 				$query .= " OR $attr = ?";
+				// push value to $params, this value will be escaped and replace the ? in the query
 				$params[] = $part;
 			}
+			// end the condition
 			$query .= ")";
 		}
+		// return response from the database
 		$this->api_response($this->db->query($query, $params));
 	}
 
