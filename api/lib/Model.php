@@ -133,73 +133,121 @@ abstract class Model
 		$this->api_response($this->db->query($query, $params));
 	}
 
+
 	public function getSingle($identifier)
 	{
+		// get element from database
 		$result = $this->db->query("SELECT * FROM $this->name WHERE $this->id = ?", [$identifier]);
+		// if it doesn't exist, return a 404
 		if (!$result) $this->api_response('Item Does Not Exist', 404);
+		// else return the item; [0] is needed since DB::query() returns the element wrapped in an array
 		else $this->api_response($result[0]);
 	}
 
+
 	public function getAttribute($identifier, $attribute)
 	{
+		// if the attribute is not supposed to be accessed, or doesn't exist, return a 404
+		// this _could_ be a 403 if the attribute exists, but is not supposed to be accessed,
+		// but the benefit of this wouldn't justify the amount of work required to implement this
+		// this also serves as protection against sql injections
 		if (!in_array($attribute, $this->searchable)) return $this->api_response('Invalid Attribute', 404);
 
+		// run the query
 		$result = $this->db->query("SELECT $attribute FROM $this->name WHERE $this->id = ?", [$identifier]);
+		// if nothing is returned, we'll assume that the item does not exist and return a 404
 		if (!$result) $this->api_response('Item Does Not Exist', 404);
+		// else, return the attribute; the [0] is needed since the result is wrapped in an array
 		else $this->api_response($result[0][$attribute]);
 	}
 
+
 	public function createSingle($data)
 	{
+		// $columns stores all attributes from the request body, $values stores the corresponding values
 		$columns = $values = [];
 		foreach ($data as $attr => $value)
 		{
+			// if an attribute is not included in $insertable, we ignore it
+			// this also serves as protection against sql injections
 			if (!in_array($attr, $this->insertable)) continue;
+			// push attribute and value to the corresponding arrays
 			$columns[] = $attr;
 			$values[] = $value;
 		}
+		// join column names with commas
 		$columns = implode(', ', $columns);
+		// this neat line adds a question mark for every item in $values and joins them with commas
+		// this is used to create the query template
+		// e.g. ['red', 'car'] -> '?, ?'
 		$values_template = implode(', ', array_fill(0, count($values), '?'));
+		// execute the query
 		$this->db->query("INSERT INTO $this->name ($columns) VALUES ($values_template)", $values);
+		// since a new id is automatically generated, respond with the new id
 		$this->api_response($this->db->getLastInsertId());
 	}
 
+
 	public function updateSingle($identifier, $data)
 	{
+		// $updates stores all attributes from the request body, $values stores the corresponding values
 		$updates = $values = [];
 		foreach ($data as $attr => $value)
 		{
+			// if an attribute is not included in $insertable, we ignore it
+			// this also serves as protection against sql injections
 			if (!in_array($attr, $this->insertable)) continue;
+			// push attribute and value to the corresponding arrays
+			// also adds a placeholder for the value after every attribute
 			$updates[] = "$attr = ?";
 			$values[] = $value;
 		}
+		// join column names with commas
 		$updates = implode(', ', $updates);
+		// push the primary key ($identifier) to $values, the last placeholder will be for the id (see query below)
 		$values[] = $identifier;
+		// execute the query
 		$this->api_response($this->db->query("UPDATE $this->name SET $updates WHERE $this->id = ?", $values));
 	}
 
+
 	public function replaceSingle($identifier, $data)
 	{
+		// $columns stores all attributes from the request body, $values stores the corresponding values
 		$columns = $values = [];
 		foreach ($data as $attr => $value)
 		{
+			// if an attribute is not included in $insertable, we ignore it
+			// this also serves as protection against sql injections
 			if (!in_array($attr, $this->insertable)) continue;
+			// push attribute and value to the corresponding arrays
 			$columns[] = $attr;
 			$values[] = $value;
 		}
+		// join column names with commas
 		$columns = implode(', ', $columns);
+		// this line adds a question mark for every item in $values and joins them with commas
+		// this is used to create the query template
+		// e.g. ['red', 'car'] -> '?, ?'
 		$values_template = implode(', ', array_fill(0, count($values), '?'));
+		// push the primary key ($identifier) to $values, the last placeholder will be for the id (see query below)
 		$values[] = $identifier;
+		// execute the query
 		$this->api_response($this->db->query("REPLACE INTO $this->name ($columns) VALUES ($values_template)", $values));
 	}
 
+
 	public function deleteSingle($identifier)
 	{
+		// this one is straight forward, simply delete the targeted element
 		$this->api_response($this->db->query("DELETE FROM $this->name WHERE $this->id = ?", [$identifier]));
 	}
 
 
 
+	// returns a valid api response as json
+	// json allows the root element to be of any data type
+	// this means that strings will be wrapped in quotation marks
 	protected function api_response($data, $code = 200)
 	{
 		http_response_code($code);
