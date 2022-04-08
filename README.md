@@ -39,6 +39,7 @@ Dabei ist weniger das englische Wort für Sterben nahe gelegt, das der deutsche 
 | `?color=red&color=blue` | nur Gegenstände, deren Attribut `color` gleich `red` **und** gleich `blue` ist (1:n, n:m) |
 | `?color=red&type=car&color=blue` | nur Gegenstände, deren Attribut `color` gleich `red` **und** gleich `blue` ist **und** deren `type` gleich `car` ist |
 | `?color` | nur Gegenstände, deren Attribut `color` nicht `NULL` ist |
+| `?color=` | nur Gegenstände, deren Attribut `color` gleich `""` (leerer String) ist |
 | `?color=red=blue` | ungültig, als `?` gewertet |
 | `?color=red=blue&type=car` | ungültig, als `?type=car` gewertet |
 
