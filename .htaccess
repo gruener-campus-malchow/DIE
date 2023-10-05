@@ -2,8 +2,10 @@
 # requires mod_rewrite
 RewriteEngine On
 
-# api base url, all requests in this directory are handled by DIE
-RewriteBase /api/
+# auto detect base path
+RewriteBase /
+RewriteCond $1#%{REQUEST_URI} ^(.*)#(.*)\1$
+RewriteRule ^(.*)$ - [E=BASE:%2]
 
 # you can make exceptions for directories you want the web server to handle,
 # for example a `public` directory containing css and js. just uncomment the
@@ -13,4 +15,4 @@ RewriteBase /api/
 
 
 
-RewriteRule . index.php
+RewriteRule . %{ENV:BASE}index.php

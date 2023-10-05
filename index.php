@@ -6,7 +6,13 @@ if (!defined('ENV')) define('ENV', 'PROD');
 if (ENV == 'DEV') error_reporting(E_ALL);
 else error_reporting(0);
 
-if (!config_defined('BASE_PATH')) die('base path configuration missing');
+if (!config_defined('BASE_PATH'))
+{
+	$base_path = dirname($_SERVER['SCRIPT_NAME']);
+	if ($base_path != '/') $base_path .= '/';
+	define('BASE_PATH', $base_path);
+}
+
 if (substr(BASE_PATH, 0, 1) != '/' || substr(BASE_PATH, -1) != '/') die('base path misconfigured: make sure first and last character are a /');
 
 if (!config_defined('DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST')) die('database configuration missing');
