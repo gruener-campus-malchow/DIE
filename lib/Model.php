@@ -18,6 +18,13 @@ abstract class Model
 	// $identifier and $attribute refer to the second and third subdirectory
 	public function call($identifier, $attribute)
 	{
+		// prevent SQL injection
+		$pattern = "\b(ALTER|CREATE|DELETE|DROP|EXEC(UTE){0,1}|INSERT( +INTO){0,1}|MERGE|SELECT|UPDATE|UNION( +ALL){0,1})\b";
+		if (preg_match($pattern, $identifier) || preg_match($pattern, $attribute)) {
+			http_response_code(403);
+			die("Be a nice person, don't inject SQL");
+		}
+		
 		switch ($_SERVER['REQUEST_METHOD'])
 		{
 			case 'GET':
